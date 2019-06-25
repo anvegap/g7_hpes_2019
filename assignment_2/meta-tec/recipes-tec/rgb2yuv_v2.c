@@ -5,90 +5,22 @@
 #include <time.h>
 #include <string.h>
 
-void rgbToYuv(unsigned char* RGB_buffer , unsigned char* YUV_buffer, int size)
+unsigned char* ColorSpaceConvert(unsigned char R, unsigned char G, unsigned char B)
 {
-    unsigned char Y_buffer[(size/3)];
-    unsigned char U_buffer[(size/3)];
-    unsigned char V_buffer[(size/3)];
-      
-    int k = 0;
-    unsigned char rVal;
-    unsigned char gVal;
-    unsigned char bVal;
-            
-	for(int j = 0; j <= size-3; j=j+3)
-	{  
-        if(j==0)
-        {
-            for(int h=0; h<3; h++)
-                printf("INICIO FOR: %i\n",RGB_buffer[h]);
-        }
-        
-        //floating
-		//YUV_buffer[j]   = 0.299  * RGB_buffer[j+0] + 0.587 * RGB_buffer[j+1] + 0.114 * RGB_buffer[j+2];	    //0.299 * rValue + 0.587 * gValue + 0.114 * bValue;
-		//YUV_buffer[j+1] = -0.169 * RGB_buffer[j+0] - 0.331 * RGB_buffer[j+1] + 0.5   * RGB_buffer[j+2] + 128; //-0.147 * rValue - 0.289 * gValue + 0.436 * bValue; 
-		//YUV_buffer[j+2] = 0.5    * RGB_buffer[j+0] - 0.419 * RGB_buffer[j+1] - 0.081 * RGB_buffer[j+2] + 128;  //0.615 * rValue + 0.515 * gValue - 0.100 * bValue;
-        
-        YUV_buffer[j]   = (unsigned char)(0.299  * RGB_buffer[j+0] + 0.587 * RGB_buffer[j+1] + 0.114 * RGB_buffer[j+2]);	    //0.299 * rValue + 0.587 * gValue + 0.114 * bValue;
-		YUV_buffer[j+1] = (unsigned char)(-0.1473 * RGB_buffer[j+0] - 0.28886 * RGB_buffer[j+1] + 0.436   * RGB_buffer[j+2] + 128); //-0.147 * rValue - 0.289 * gValue + 0.436 * bValue; 
-		YUV_buffer[j+2] = (unsigned char)(0.615 * RGB_buffer[j+0] - 0.51499 * RGB_buffer[j+1] - 0.10001 * RGB_buffer[j+2] + 128);  //0.615 * rValue + 0.515 * gValue - 0.100 * bValue;
-        
-        if(j==0)
-        {
-            for(int h=0; h<3; h++)
-                printf("DESPUES CONVERSION: %i\n",RGB_buffer[h]);
-        }
-        
-        //fixed
-        //YUV_buffer[j+0]   = ((66 * RGB_buffer[j+0] + 129 * RGB_buffer[j+1] + 25 * RGB_buffer[j+2] + 128) >> 8) + 16;  //0.299 * rValue + 0.587 * gValue + 0.114 * bValue;
-		//YUV_buffer[j+1] = ((-38 * RGB_buffer[j+0] - 74 * RGB_buffer[j+1] + 112 * RGB_buffer[j+2] + 128) >> 8) + 128;  //-0.147 * rValue - 0.289 * gValue + 0.436 * bValue; 
-		//YUV_buffer[j+2] = ((112 * RGB_buffer[j+0] - 94 * RGB_buffer[j+1] - 18 * RGB_buffer[j+2] + 128) >> 8) + 128;   //0.615 * rValue + 0.515 * gValue - 0.100 * bValue;
-        
-        //printf("\nR: %i, G: %i, B: %i -------- Y: %i, U: %i, V: %i", RGB_buffer[j], RGB_buffer[j+1], RGB_buffer[j+2], Y_buffer[k], U_buffer[k], V_buffer[k]);
-        //printf("\nR: %i, G: %i, B: %i -------- Y: %i, U: %i, V: %i", RGB_buffer[j], RGB_buffer[j+1], RGB_buffer[j+2], YUV_buffer[j], YUV_buffer[j+1], YUV_buffer[j+2]);
-        
-        Y_buffer[k] = YUV_buffer[j];
-        U_buffer[k] = YUV_buffer[j+1];
-        V_buffer[k] = YUV_buffer[j+2];
-        
-        //printf("\n------------------------------------------valor de K: %i", k);
-        //fflush(stdout);
-        if(j==0)
-        {
-            printf("R: %i, G: %i, B: %i -------- ", RGB_buffer[j], RGB_buffer[j+1], RGB_buffer[j+2]);
-            printf("Y: %i, U: %i, V: %i\n", Y_buffer[k], U_buffer[k], V_buffer[k]);
-        }
-     
-        k++;
-	}
-	
-	unsigned char* out = malloc(size*sizeof(unsigned char));
+    static unsigned char YUV[3];
     
-	memcpy(out, Y_buffer, (size/3)*sizeof(unsigned char));
-    memcpy(out + (size/3), U_buffer, (size/3)*sizeof(unsigned char));
-    memcpy(out + (2*size/3), V_buffer, (size/3)*sizeof(unsigned char));
+    YUV[0] = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
+    YUV[1] = ((-38 * R - 74 * G + 112 * B + 128) >> 8) + 128; 
+    YUV[2] = ((112 * R - 94 * G - 18 * B + 128) >> 8) + 128;
     
-    YUV_buffer = out;
-    //printf("Valor de k: %d", k);
-}
-
-void printChar(char *fileToPrint)
-{
-	FILE * filename;
-	unsigned char character;
-
-	filename = fopen(fileToPrint, "r");
-	if (filename == NULL)
-	{
-		printf("Error reading file\n\n");
-		exit(1);
-	}
-
-	while((character = fgetc(filename))!= EOF)
-	{
-		printf("%c", character);
-	}
-	fclose(filename);
+    //YUV[0] = 0.299 * R + 0.587 * G + 0.114 * B;
+    //YUV[1] = -0.168736 * R - 0.331264 * G + 0.5 * B + 128; 
+    //YUV[2] = 0.5 * R - 0.418688 * G - 0.081312 * B + 128;
+    
+    //printf("Before ---> R: %u, G: %u, B: %u\n", R, G, B);
+    //printf("After ---> Y: %u, U: %u, V: %u\n", YUV[0], YUV[1], YUV[2]);
+    
+    return YUV;
 }
 
 void rgb2yub(char *input_image, char *output_image)
@@ -96,12 +28,7 @@ void rgb2yub(char *input_image, char *output_image)
 	FILE * input_fp;
 	FILE * output_fp;
 	char character;
-	double timeOfExecution = 0;
 	int charCounter=0;
-	int pixelCounter=0;
-	
-	printf("Archivo RGB a convertir: %s \n", input_image);
-	clock_t beginExecution = clock(); 		// **Reubicar esta linea para medir bien el tiempo
 	
 	input_fp = fopen(input_image, "r");
 	if (input_fp == NULL)
@@ -124,16 +51,35 @@ void rgb2yub(char *input_image, char *output_image)
         while((character = fgetc(input_fp))!= EOF)
         {
             RGB_buffer[charCounter] = (unsigned char)character;
-            if(charCounter <3)
-                printf("%i\n",(unsigned char)character);
             charCounter++;
         }
+          
+        unsigned char YUV_buffer[2*charCounter];
+    
+        unsigned char *YUV;
+        unsigned char Y_buffer[(charCounter/3)];
+        unsigned char U_buffer[(charCounter/3)];
+        unsigned char V_buffer[(charCounter/3)];
+        
+        int k = 0;
+        
+        for(int i = 0; i <= charCounter-3; i=i+3)
+        {  
+            YUV = ColorSpaceConvert(RGB_buffer[i], RGB_buffer[i+1], RGB_buffer[i+2]);
             
-        unsigned char YUV_buffer[pixelCounter];
-		
-        rgbToYuv(RGB_buffer, YUV_buffer, charCounter);
-
+            Y_buffer[k] = YUV[0];
+            U_buffer[k] = YUV[1];
+            V_buffer[k] = YUV[2];
+            
+            k++;
+        }
+    
+        memcpy(YUV_buffer, Y_buffer, (charCounter/3)*sizeof(unsigned char));
+        memcpy(YUV_buffer + (charCounter/3), U_buffer, (charCounter/3)*sizeof(unsigned char));
+        memcpy(YUV_buffer + (2*charCounter/3), V_buffer, (charCounter/3)*sizeof(unsigned char));
+        
         output_fp = fopen(output_image, "w");
+        
 		if (output_fp == NULL)
 		{
 			printf("Error en crear archivo de salida\n\n");
@@ -143,16 +89,8 @@ void rgb2yub(char *input_image, char *output_image)
 		fputs(YUV_buffer, output_fp);
 	}
 
-
-	printf("\n\n\nFinished convertion \n");
 	fclose(input_fp);
 	fclose(output_fp);
-
-
-	clock_t endExecution = clock();
-	timeOfExecution = (double)(endExecution - beginExecution)/CLOCKS_PER_SEC;
-	printf("\n\nrgb2yub execution time is: %f Seconds\n\n", timeOfExecution);
-	
 }
 
 int main(int argc, char **argv )
@@ -186,15 +124,15 @@ int main(int argc, char **argv )
 				break;
 			case '?':
 				if(optopt=='o')
-				{	fprintf(stderr, "Option -%c requires argument \n", optopt);
+				{	fprintf(stderr, "Option -%c requires argument for output file \n", optopt);
 					oflag=0;}
 				else if(optopt=='i')
-				{	fprintf(stderr, "Option -%c requires argument \n", optopt);
+				{	fprintf(stderr, "Option -%c requires argument for input file \n", optopt);
 					iflag=0;}
 				else if (isprint(optopt))
 					fprintf(stderr, "unknown option `-%c \n", optopt);
 				else
-					fprintf(stderr, "unknown Character `\\x%x'.\n", optopt);
+					fprintf(stderr, "unknown character `\\x%x'.\n", optopt);
 				return 1;
 			default:
 				printf("unknown case \n");
@@ -203,21 +141,33 @@ int main(int argc, char **argv )
 	}
 
 	if(hflag)
-	{
-	printf(" Usage:\n ./rgb2yub -i <RGB file name> -o <YUV file name>\n");
-	}
-	if(iflag * oflag)
-	{
-		rgb2yub(ivalue, ovalue);
-	}
+        printf(" Usage:\n ./rgb2yub -i <RGB file name> -o <YUV file name>\n");
 	else
-	{
-		printf("Missing Paramenter \n");
-		printf(" Usage:\n ./rgb2yub -i <RGB file name> -o <YUV file name>\n");
-	}
-	if(aflag)
-	{
-	printf(" Autors:\n Jose Pablo Vernava \n Albert Hernandez \n Natalia Rodriguez \n Anthony Vega\n");
-	}
+    {
+        if(aflag)
+            printf(" Authors:\n Jose Pablo Vernava \n Albert Hernandez \n Natalia Rodriguez \n Anthony Vega\n");
+        else
+        {
+            if(iflag*oflag)
+            {
+                clock_t beginExecution;
+                clock_t endExecution;
+                double timeOfExecution;
+                
+                beginExecution = clock();
+                rgb2yub(ivalue, ovalue);
+                endExecution = clock();
+                    
+                timeOfExecution = (double)(endExecution - beginExecution)/CLOCKS_PER_SEC;
+                printf("\n\nrgb2yub execution time is: %f Seconds\n\n", timeOfExecution);
+            }
+            else
+            {
+                printf("Missing Paramenter \n");
+                printf(" Usage:\n ./rgb2yub -i <RGB file name> -o <YUV file name>\n");
+            }
+        }
+    }
+    
 	return 0;
 }
