@@ -10,9 +10,17 @@ SRCREV = "40c6e817eb62f3a82d328dfcec940770aa146c23"
 SRC_URI = "file://rgb2yuv-intrinsics.c \
 	   file://LICENSE \
 	   file://Makefile.am \
-	   file://configure.ac \   
+	   file://configure.ac \ 
+	   file://documentation-example.txt \   
 "
 S = "${WORKDIR}"
+
+do_install_append() {
+	install -d ${D}/rgb2yuv-intrinsics-docs
+	cp ${WORKDIR}/documentation-example.txt ${D}/rgb2yuv-intrinsics-docs
+}
+
+FILES_${PN} += "/rgb2yuv-intrinsics-docs" 
 
 inherit autotools
 

@@ -1,20 +1,26 @@
-#
-# This file was derived from the 'Hello World!' example recipe in the
-# Yocto Project Development Manual.
-#
-
-DESCRIPTION = "Simple helloworld application"
-SECTION = "examples"
+DESCRIPTION = "rgb2yuv using C"
+SECTION = "rgb2yuv-c"
 DEPENDS = ""
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=96af5705d6f64a88e035781ef00e98a8"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}-${PV}:"
 
-SRCREV = "5c58a861ca31710f6433487b8b0d590a43afd0ad"
-SRC_URI = "git://github.com/DynamicDevices/bbexample.git"
+SRCREV = "40c6e817eb62f3a82d328dfcec940770aa146c23"
+SRC_URI = "file://rgb2yuv-c.c \
+	   file://LICENSE \
+	   file://Makefile.am \
+	   file://configure.ac \
+	   file://documentation-example.txt \   
+"
+S = "${WORKDIR}"
 
-S = "${WORKDIR}/git"
+do_install_append() {
+	install -d ${D}/rgb2yuv-c-docs
+	cp ${WORKDIR}/documentation-example.txt ${D}/rgb2yuv-c-docs
+}
+
+FILES_${PN} += "/rgb2yuv-c-docs" 
 
 inherit autotools
 
