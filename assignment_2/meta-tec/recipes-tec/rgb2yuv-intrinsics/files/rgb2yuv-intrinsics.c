@@ -5,35 +5,91 @@
 #include <time.h>
 #include <string.h>
 
-unsigned char* ColorSpaceConvert(unsigned char R, unsigned char G, unsigned char B)
+//NEON optimized libraries and Intrinsics
+//#include <omxSP.h>
+#include <arm_neon.h>
+
+void ColorSpaceConvertIntrinsics(uint8_t * __restrict Y, uint8_t * __restrict U, uint8_t * __restrict V, uint8_t * __restrict Src, int n)
 {
-    static unsigned char YUV[3];
+    int i;
     
-    YUV[0] = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
-    YUV[1] = ((-38 * R - 74 * G + 112 * B + 128) >> 8) + 128; 
-    YUV[2] = ((112 * R - 94 * G - 18 * B + 128) >> 8) + 128;
+    uint8x8_t rY = vdup_n_u8(66);
+    uint8x8_t gY = vdup_n_u8(129);
+    uint8x8_t bY = vdup_n_u8(25);
     
-    //YUV[0] = 0.299 * R + 0.587 * G + 0.114 * B;
-    //YUV[1] = -0.168736 * R - 0.331264 * G + 0.5 * B + 128; 
-    //YUV[2] = 0.5 * R - 0.418688 * G - 0.081312 * B + 128;
+    uint8x8_t rU = vdup_n_u8(38);
+    uint8x8_t gU = vdup_n_u8(74);
+    uint8x8_t bU = vdup_n_u8(112);
     
-    //printf("Before ---> R: %u, G: %u, B: %u\n", R, G, B);
-    //printf("After ---> Y: %u, U: %u, V: %u\n", YUV[0], YUV[1], YUV[2]);
+    uint8x8_t rV = vdup_n_u8(112);
+    uint8x8_t gV = vdup_n_u8(94);
+    uint8x8_t bV = vdup_n_u8(18);
     
-    return YUV;
+    uint8x8_t offset16 = vdup_n_u8(16);
+    uint16x8_t offset128 = vdupq_n_u16(128);
+    
+    n/=8;
+    
+    for(i=0; i<n; i++)
+    {
+        uint16x8_t tempY; 
+        uint16x8_t tempU; 
+        uint16x8_t tempV;
+        
+        uint8x8_t resultY;
+        uint16x8_t resultU;
+        uint16x8_t resultV;
+        
+        uint8x8x3_t RGB = vld3_u8(Src);
+        
+        //YUV[0] = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
+        //Y Conversion
+        tempY = vmull_u8(RGB.val[0], rY);		     // 66 * R
+        tempY = vmlal_u8(tempY, RGB.val[1], gY);	 // + 129 * G
+        tempY = vmlal_u8(tempY, RGB.val[2], bY);     // + 25 * B
+        resultY = vshrn_n_u16(tempY, 8);		     // >> 8
+        resultY = vadd_u8(resultY, offset16);		 // + 16
+
+        //YUV[1] = ((-38 * R - 74 * G + 112 * B + 128) >> 8) + 128;
+        //U Conversion
+        tempU = vmull_u8(RGB.val[2], bU);	          // 112 * B
+        tempU = vmlsq_u16(tempU, vmovl_u8(RGB.val[0]), vmovl_u8(rU));     // - 38 * R       u16x8, u16x8, u16x8
+        tempU = vmlsq_u16(tempU, vmovl_u8(RGB.val[1]), vmovl_u8(gU));     // - 74 * G
+        tempU = vaddq_u16(tempU, offset128);                              // + 128 
+        resultU = vmovl_u8(vshrn_n_u16(tempU, 8));                        // >> 8
+        resultU = vaddq_u16(resultU, offset128);                          // + 128
+        
+        //YUV[2] = ((112 * R - 94 * G - 18 * B + 128) >> 8) + 128;
+        //V Conversion
+        tempV = vmull_u8(RGB.val[0], rV);                                 // 112 * R
+        tempV = vmlsq_u16(tempV, vmovl_u8(RGB.val[1]), vmovl_u8(gV));     // - 94 * G
+        tempV = vmlsq_u16(tempV, vmovl_u8(RGB.val[2]), vmovl_u8(bV));     // - 18 * B
+        tempV = vaddq_u16(tempV, offset128);                              // + 128
+        resultV = vmovl_u8(vshrn_n_u16(tempV, 8));                        // >> 8
+        resultV = vaddq_u16(resultV, offset128);                          // + 128
+        
+        vst1_u8(Y, resultY);
+        vst1_u8(U, vmovn_u16(resultU));
+        vst1_u8(V, vmovn_u16(resultV));
+        
+        Src += 8*3;
+        Y += 8;
+        U += 8;
+        V += 8;
+    }
 }
 
-void rgb2yub(char *input_image, char *output_image)
+void rgb2yuv(char *input_image, char *output_image)
 {
 	FILE * input_fp;
 	FILE * output_fp;
-	char character;
+	int character;
 	int charCounter=0;
 	
 	input_fp = fopen(input_image, "r");
 	if (input_fp == NULL)
 	{
-		printf("Error en apertura de archivo\n\n");
+		printf("ERROR: Couldn't open file %s\n\n", input_image);
 		exit(1);
 	}
 	else
@@ -61,18 +117,12 @@ void rgb2yub(char *input_image, char *output_image)
         unsigned char U_buffer[(charCounter/3)];
         unsigned char V_buffer[(charCounter/3)];
         
-        int k = 0;
+        uint8_t * pSrc = RGB_buffer;
+        uint8_t * pY =  Y_buffer;
+        uint8_t * pU =  U_buffer;
+        uint8_t * pV =  V_buffer;
         
-        for(int i = 0; i <= charCounter-3; i=i+3)
-        {  
-            YUV = ColorSpaceConvert(RGB_buffer[i], RGB_buffer[i+1], RGB_buffer[i+2]);
-            
-            Y_buffer[k] = YUV[0];
-            U_buffer[k] = YUV[1];
-            V_buffer[k] = YUV[2];
-            
-            k++;
-        }
+        ColorSpaceConvertIntrinsics(pY, pU, pV, pSrc, charCounter/3);
     
         memcpy(YUV_buffer, Y_buffer, (charCounter/3)*sizeof(unsigned char));
         memcpy(YUV_buffer + (charCounter/3), U_buffer, (charCounter/3)*sizeof(unsigned char));
@@ -82,11 +132,11 @@ void rgb2yub(char *input_image, char *output_image)
         
 		if (output_fp == NULL)
 		{
-			printf("Error en crear archivo de salida\n\n");
+			printf("ERROR: Couldn't create file %s\n\n", output_image);
 			exit(1);
 		}
 
-		fputs(YUV_buffer, output_fp);
+		fwrite(YUV_buffer, charCounter, 1, output_fp);
 	}
 
 	fclose(input_fp);
@@ -95,8 +145,8 @@ void rgb2yub(char *input_image, char *output_image)
 
 int main(int argc, char **argv )
 {
-	char *ivalue = "initial_input";
-	char *ovalue = "initial_output";
+	char *ivalue = NULL;
+	char *ovalue = NULL;
 	extern char *optarg;
 	int iflag = 0;
     int oflag = 0;
@@ -148,23 +198,34 @@ int main(int argc, char **argv )
             printf(" Authors:\n Jose Pablo Vernava \n Albert Hernandez \n Natalia Rodriguez \n Anthony Vega\n");
         else
         {
-            if(iflag*oflag)
+            if(iflag)
             {
-                clock_t beginExecution;
-                clock_t endExecution;
-                double timeOfExecution;
-                
-                beginExecution = clock();
-                rgb2yub(ivalue, ovalue);
-                endExecution = clock();
+                if(oflag)
+                {
+                    clock_t beginExecution;
+                    clock_t endExecution;
                     
-                timeOfExecution = (double)(endExecution - beginExecution)/CLOCKS_PER_SEC;
-                printf("\n\nrgb2yub execution time is: %f Seconds\n\n", timeOfExecution);
+                    double timeOfExecution;
+                    beginExecution = clock();
+                    
+                    rgb2yuv(ivalue, ovalue);
+                    
+                    endExecution = clock();
+                    
+                    timeOfExecution = (double)(endExecution - beginExecution)/CLOCKS_PER_SEC;
+                    printf("\n\nrgb2yuv execution time is: %f Seconds\n\n", timeOfExecution);
+                }
+                else
+                {
+                    printf("Missing Paramenter \n");
+                    printf(" Usage:\n ./rgb2yuv -i <RGB file name> -o <YUV file name>\n");
+                }
+                
             }
             else
             {
                 printf("Missing Paramenter \n");
-                printf(" Usage:\n ./rgb2yub -i <RGB file name> -o <YUV file name>\n");
+                printf(" Usage:\n ./rgb2yuv -i <RGB file name> -o <YUV file name>\n");
             }
         }
     }

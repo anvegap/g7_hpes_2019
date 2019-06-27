@@ -11,13 +11,18 @@ SRC_URI = "file://rgb2yuv-c.c \
 	   file://LICENSE \
 	   file://Makefile.am \
 	   file://configure.ac \
-	   file://documentation-example.txt \   
+	   file://input.rgb \ 
+	   file://output_c.yuv \   
+	   file://c_results.pdf \  
 "
 S = "${WORKDIR}"
 
 do_install_append() {
 	install -d ${D}/rgb2yuv-c-docs
-	cp ${WORKDIR}/documentation-example.txt ${D}/rgb2yuv-c-docs
+	cp ${WORKDIR}/rgb2yuv-c.c ${D}/rgb2yuv-c-docs
+	cp ${WORKDIR}/input.rgb ${D}/rgb2yuv-c-docs
+	cp ${WORKDIR}/output_c.yuv ${D}/rgb2yuv-c-docs
+	cp ${WORKDIR}/c_results.pdf ${D}/rgb2yuv-c-docs
 }
 
 FILES_${PN} += "/rgb2yuv-c-docs" 

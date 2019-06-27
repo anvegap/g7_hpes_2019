@@ -23,17 +23,17 @@ unsigned char* ColorSpaceConvert(unsigned char R, unsigned char G, unsigned char
     return YUV;
 }
 
-void rgb2yub(char *input_image, char *output_image)
+void rgb2yuv(char *input_image, char *output_image)
 {
 	FILE * input_fp;
 	FILE * output_fp;
-	char character;
+	int character;
 	int charCounter=0;
 	
 	input_fp = fopen(input_image, "r");
 	if (input_fp == NULL)
 	{
-		printf("Error en apertura de archivo\n\n");
+		printf("ERROR: Couldn't open file %s\n\n", input_image);
 		exit(1);
 	}
 	else
@@ -64,7 +64,7 @@ void rgb2yub(char *input_image, char *output_image)
         int k = 0;
         
         for(int i = 0; i <= charCounter-3; i=i+3)
-        {  
+        {             
             YUV = ColorSpaceConvert(RGB_buffer[i], RGB_buffer[i+1], RGB_buffer[i+2]);
             
             Y_buffer[k] = YUV[0];
@@ -82,7 +82,7 @@ void rgb2yub(char *input_image, char *output_image)
         
 		if (output_fp == NULL)
 		{
-			printf("Error en crear archivo de salida\n\n");
+			printf("ERROR: Couldn't create file %s\n\n", output_image);
 			exit(1);
 		}
 
@@ -148,23 +148,34 @@ int main(int argc, char **argv )
             printf(" Authors:\n Jose Pablo Vernava \n Albert Hernandez \n Natalia Rodriguez \n Anthony Vega\n");
         else
         {
-            if(iflag*oflag)
+            if(iflag)
             {
-                clock_t beginExecution;
-                clock_t endExecution;
-                double timeOfExecution;
-                
-                beginExecution = clock();
-                rgb2yub(ivalue, ovalue);
-                endExecution = clock();
+                if(oflag)
+                {
+                    clock_t beginExecution;
+                    clock_t endExecution;
                     
-                timeOfExecution = (double)(endExecution - beginExecution)/CLOCKS_PER_SEC;
-                printf("\n\nrgb2yub execution time is: %f Seconds\n\n", timeOfExecution);
+                    double timeOfExecution;
+                    beginExecution = clock();
+                    
+                    rgb2yuv(ivalue, ovalue);
+                    
+                    endExecution = clock();
+                    
+                    timeOfExecution = (double)(endExecution - beginExecution)/CLOCKS_PER_SEC;
+                    printf("\n\nrgb2yuv execution time is: %f Seconds\n\n", timeOfExecution);
+                }
+                else
+                {
+                    printf("Missing Paramenter \n");
+                    printf(" Usage:\n ./rgb2yuv -i <RGB file name> -o <YUV file name>\n");
+                }
+                
             }
             else
             {
                 printf("Missing Paramenter \n");
-                printf(" Usage:\n ./rgb2yub -i <RGB file name> -o <YUV file name>\n");
+                printf(" Usage:\n ./rgb2yuv -i <RGB file name> -o <YUV file name>\n");
             }
         }
     }

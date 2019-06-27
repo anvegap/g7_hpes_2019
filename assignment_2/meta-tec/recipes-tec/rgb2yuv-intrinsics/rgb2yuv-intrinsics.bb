@@ -10,14 +10,18 @@ SRCREV = "40c6e817eb62f3a82d328dfcec940770aa146c23"
 SRC_URI = "file://rgb2yuv-intrinsics.c \
 	   file://LICENSE \
 	   file://Makefile.am \
-	   file://configure.ac \ 
-	   file://documentation-example.txt \   
+	   file://configure.ac \  
+	   file://input.rgb \ 
+	   file://output_intrinsics.yuv \   
+	   file://intrinsics_results.pdf \       
 "
 S = "${WORKDIR}"
 
 do_install_append() {
 	install -d ${D}/rgb2yuv-intrinsics-docs
-	cp ${WORKDIR}/documentation-example.txt ${D}/rgb2yuv-intrinsics-docs
+	cp ${WORKDIR}/input.rgb ${D}/rgb2yuv-intrinsics-docs
+	cp ${WORKDIR}/output_intrinsics.yuv ${D}/rgb2yuv-intrinsics-docs
+	cp ${WORKDIR}/intrinsics_results.pdf ${D}/rgb2yuv-intrinsics-docs
 }
 
 FILES_${PN} += "/rgb2yuv-intrinsics-docs" 
