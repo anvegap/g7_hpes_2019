@@ -1,0 +1,42 @@
+Valgrind reporta el siguiente error:
+
+==8168== Invalid write of size 4
+
+Entonces, se modifico el codigo fuente del case1.c tal y como se muestra a continuacion, para identificar donde ocurre el error.
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char** argv){
+  int i;
+  int *a = malloc(sizeof(int) * 10);
+  if (!a) return -1; /*malloc failed*/
+  for (i = 0; i < 11; i++){
+    printf("i=%i\n",i);     //added for debug
+    a[i] = i;
+  }
+  free(a);
+  return 0;
+}
+
+
+En la salida del Valgrind se observa ahora:
+
+==8168== Command: ./case1
+==8168== 
+i=0
+i=1
+i=2
+i=3
+i=4
+i=5
+i=6
+i=7
+i=8
+i=9
+i=10
+==8168== Invalid write of size 4
+
+De modo que el error ocurre al intentar escribir fuera de la memoria asignada cuando i=10, ya que solo existen las posiciones 0-9 segun la instruccion. 
+
+int *a = malloc(sizeof(int) * 10);

@@ -1,0 +1,42 @@
+Valgrind reporta que no existen problemas de memory leak:
+
+==8210== All heap blocks were freed -- no leaks are possible
+
+El codigo fuente del case2.c se muestra a continuacion:
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char** argv){
+  int i;
+  int a[10];
+  for (i = 0; i < 9; i++)
+    a[i] = i;
+    
+  for (i = 0; i < 10; i++){
+    printf("%d ", a[i]);
+  }
+  printf("\n");
+  return 0;
+}
+
+En este caso no se inicializa toda la memoria asignada (10 integer asignados, 9 inicializados). Al accesar el valor de la posicion 9 Valgring detecta que no se ha initializado y reporta lo siguiente:
+
+==8210== Command: ./case2
+==8210== 
+==8210== Conditional jump or move depends on uninitialised value(s)
+==8210==    at 0x4E988DA: vfprintf (vfprintf.c:1642)
+==8210==    by 0x4EA0F25: printf (printf.c:33)
+==8210==    by 0x400608: main (case2.c:11)
+==8210== 
+==8210== Use of uninitialised value of size 8
+==8210==    at 0x4E9486B: _itoa_word (_itoa.c:179)
+==8210==    by 0x4E97F0D: vfprintf (vfprintf.c:1642)
+==8210==    by 0x4EA0F25: printf (printf.c:33)
+==8210==    by 0x400608: main (case2.c:11)
+
+En la salida del programa se muestra:
+
+0 1 2 3 4 5 6 7 8 31 
+
+De aqui se observa que el ultimo valor no corresponde al esperado segun la secuencia, esto porque dicha posicion de memoria puede contener cualquier valor.

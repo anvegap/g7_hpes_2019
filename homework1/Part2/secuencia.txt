@@ -1,0 +1,3 @@
+gcc -w -o test test.c
+gcc -w -fPIC -shared -o mylib.so mylibc.c -ldl
+LD_PRELOAD=./mylib.so ./test

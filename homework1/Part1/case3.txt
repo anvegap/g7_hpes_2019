@@ -1,0 +1,37 @@
+Valgrind reporta que existen memory leaks:
+
+==8228== HEAP SUMMARY:
+==8228==     in use at exit: 3,600 bytes in 9 blocks
+==8228==   total heap usage: 10 allocs, 1 frees, 4,000 bytes allocated
+==8228== 
+==8228== LEAK SUMMARY:
+==8228==    definitely lost: 3,600 bytes in 9 blocks
+
+El codigo fuente del case3.c se muestra a continuacion:
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char** argv){
+  int i;
+  int *a;
+
+  for (i=0; i < 10; i++){
+    a = malloc(sizeof(int) * 100);
+  }
+  free(a);
+  return 0;
+}
+
+En este caso se realizan mutiples asignaciones de memoria dentro del ciclo for, pero unicamente se libera al final de este. Cada iteracion del for asigna 400 bytes y esto se repite 10 veces, en total 4000 bytes asignados, lo cual concuerda con el reporte. Sin embargo, se liberan unicamente los ultimos 400 asignados.
+
+Para comprobar esto, se mueve la intruccion "free(a)" dentro del for y se ejecuta el Valgrind nuevamente:
+
+==8954== HEAP SUMMARY:
+==8954==     in use at exit: 0 bytes in 0 blocks
+==8954==   total heap usage: 10 allocs, 10 frees, 4,000 bytes allocated
+==8954== 
+==8954== All heap blocks were freed -- no leaks are possible
+
+
+
